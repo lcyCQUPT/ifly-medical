@@ -12,7 +12,11 @@ export async function getVisits(req: Request, res: Response) {
 
 export async function getVisit(req: Request, res: Response) {
   const idParam = typeof req.params.id === 'string' ? req.params.id : '';
-  const id = parseInt(idParam);
+  const id = parseInt(idParam, 10);
+  if (isNaN(id)) {
+    res.status(400).json({ error: '无效的记录 ID' });
+    return;
+  }
   const visit = await visitService.getVisit(id);
   if (!visit) {
     res.status(404).json({ error: '就诊记录不存在' });
@@ -45,7 +49,11 @@ export async function createVisit(req: Request, res: Response) {
 
 export async function updateVisit(req: Request, res: Response) {
   const idParam = typeof req.params.id === 'string' ? req.params.id : '';
-  const id = parseInt(idParam);
+  const id = parseInt(idParam, 10);
+  if (isNaN(id)) {
+    res.status(400).json({ error: '无效的记录 ID' });
+    return;
+  }
   const { visitDate, hospital, department, chiefComplaint, diagnosis, doctorAdvice, notes } = req.body;
   const data: Partial<visitService.VisitInput> = {};
   if (visitDate !== undefined) data.visitDate = new Date(visitDate);
@@ -66,7 +74,11 @@ export async function updateVisit(req: Request, res: Response) {
 
 export async function deleteVisit(req: Request, res: Response) {
   const idParam = typeof req.params.id === 'string' ? req.params.id : '';
-  const id = parseInt(idParam);
+  const id = parseInt(idParam, 10);
+  if (isNaN(id)) {
+    res.status(400).json({ error: '无效的记录 ID' });
+    return;
+  }
   const ok = await visitService.deleteVisit(id);
   if (!ok) {
     res.status(404).json({ error: '就诊记录不存在' });
