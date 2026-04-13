@@ -12,8 +12,9 @@ const storage = multer.diskStorage({
     cb(null, dir);
   },
   filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const base = path.basename(file.originalname, ext);
+    const decoded = Buffer.from(file.originalname, 'latin1').toString('utf8');
+    const ext = path.extname(decoded);
+    const base = path.basename(decoded, ext);
     cb(null, `${base}_${Date.now()}${ext}`);
   },
 });

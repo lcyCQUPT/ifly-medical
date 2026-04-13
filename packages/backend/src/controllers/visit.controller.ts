@@ -113,8 +113,9 @@ export async function uploadAttachment(req: Request, res: Response) {
     return;
   }
 
+  const originalName = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
   const attachment = {
-    name: req.file.originalname,
+    name: originalName,
     url: `${req.protocol}://${req.get('host')}/uploads/visits/${id}/${req.file.filename}`,
     size: req.file.size,
     uploadedAt: new Date().toISOString(),
