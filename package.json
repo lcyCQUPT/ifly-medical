@@ -1,0 +1,9 @@
+{
+  "name": "ifly-medical",
+  "private": true,
+  "scripts": {
+    "dev:frontend": "pnpm --filter frontend dev",
+    "dev:backend": "pnpm --filter backend dev",
+    "build": "pnpm --filter frontend build"
+  }
+}
