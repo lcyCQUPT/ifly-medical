@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Table, Button, Drawer, Descriptions, Popconfirm, Space, Typography } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -16,7 +16,7 @@ export function VisitsPage() {
   const { data, isLoading } = useVisits(page);
   const deleteVisit = useDeleteVisit();
 
-  const columns = [
+  const columns = useMemo(() => [
     {
       title: '就诊日期',
       dataIndex: 'visitDate',
@@ -55,7 +55,7 @@ export function VisitsPage() {
         </Button>
       ),
     },
-  ];
+  ], []);
 
   function closeDrawer() {
     setDrawerMode(null);
@@ -65,7 +65,7 @@ export function VisitsPage() {
   const drawerTitle =
     drawerMode === 'create' ? '新建就诊记录' :
     drawerMode === 'edit' ? '编辑就诊记录' :
-    '就诊详情';
+    drawerMode === 'detail' ? '就诊详情' : '';
 
   return (
     <div style={{ maxWidth: 900, margin: '40px auto' }}>
