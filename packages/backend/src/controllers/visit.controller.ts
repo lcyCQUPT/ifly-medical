@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import * as visitService from '../services/visit.service';
+import { uploadSingle, UPLOAD_ERROR } from '../middleware/upload';
 
 export async function getVisits(req: Request, res: Response) {
   const pageParam = typeof req.query.page === 'string' ? req.query.page : '';
@@ -85,4 +86,45 @@ export async function deleteVisit(req: Request, res: Response) {
     return;
   }
   res.json({ success: true });
+}
+
+export async function uploadAttachment(req: Request, res: Response) {
+  const idParam = typeof req.params.id === 'string' ? req.params.id : '';
+  const id = parseInt(idParam, 10);
+  if (isNaN(id)) {
+    res.status(400).json({ error: '无效的记录 ID' });
+    return;
+  }
+
+  const ok = await new Promise<boolean>((resolve) => {
+    uploadSingle(req, res, (err) => {
+      if (err) {
+        res.status(400).json({ error: UPLOAD_ERROR });
+        resolve(false);
+      } else {
+        resolve(true);
+      }
+    });
+  });
+  if (!ok) return;
+
+  if (!req.file) {
+    res.status(400).json({ error: '未收到文件' });
+    return;
+  }
+
+  const attachment = {
+    name: req.file.originalname,
+    url: `${req.protocol}://${req.get('host')}/uploads/visits/${id}/${req.file.filename}`,
+    size: req.file.size,
+    uploadedAt: new Date().toISOString(),
+  };
+
+  const visit = await visitService.addAttachment(id, attachment);
+  if (!visit) {
+    res.status(404).json({ error: '就诊记录不存在' });
+    return;
+  }
+
+  res.json({ data: attachment });
 }

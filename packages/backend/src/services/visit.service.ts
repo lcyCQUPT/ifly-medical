@@ -60,3 +60,16 @@ export async function deleteVisit(id: number) {
   await prisma.visit.delete({ where: { id } });
   return true;
 }
+
+export async function addAttachment(
+  visitId: number,
+  attachment: { name: string; url: string; size: number; uploadedAt: string }
+) {
+  const existing = await prisma.visit.findUnique({ where: { id: visitId } });
+  if (!existing) return null;
+  const list = existing.attachments ? JSON.parse(existing.attachments) : [];
+  list.push(attachment);
+  return toDto(
+    await prisma.visit.update({ where: { id: visitId }, data: { attachments: JSON.stringify(list) } })
+  );
+}
