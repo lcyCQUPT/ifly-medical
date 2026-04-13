@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Profile {
+  id              Int       @id @default(autoincrement())
+  name            String
+  gender          String?
+  birthDate       DateTime?
+  bloodType       String?
+  height          Float?
+  weight          Float?
+  allergies       String?
+  chronicDiseases String?
+  updatedAt       DateTime  @updatedAt
+}
+
+model Visit {
+  id             Int            @id @default(autoincrement())
+  visitDate      DateTime
+  hospital       String
+  department     String?
+  chiefComplaint String?
+  diagnosis      String?
+  doctorAdvice   String?
+  attachments    String?
+  notes          String?
+  createdAt      DateTime       @default(now())
+  medications    Medication[]
+  metrics        HealthMetric[]
+}
+
+model Medication {
+  id        Int       @id @default(autoincrement())
+  name      String
+  dosage    String?
+  frequency String?
+  startDate DateTime?
+  endDate   DateTime?
+  isActive  Boolean   @default(true)
+  visitId   Int?
+  visit     Visit?    @relation(fields: [visitId], references: [id])
+  notes     String?
+}
+
+model HealthMetric {
+  id         Int      @id @default(autoincrement())
+  type       String
+  value      Float
+  unit       String?
+  recordedAt DateTime
+  visitId    Int?
+  visit      Visit?   @relation(fields: [visitId], references: [id])
+  notes      String?
+}
+
+model ChatHistory {
+  id        Int      @id @default(autoincrement())
+  sessionId String
+  role      String
+  content   String
+  createdAt DateTime @default(now())
+}
