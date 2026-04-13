@@ -56,7 +56,7 @@ export function useDeleteVisit() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) =>
-      axios.delete(`/api/visits/${id}`).then(r => r.data),
+      axios.delete<{ success: boolean }>(`/api/visits/${id}`).then(r => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['visits'] });
     },
