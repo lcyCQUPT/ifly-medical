@@ -106,10 +106,17 @@ deleteSession(sessionId: string): Promise<void>
 
 ### 3.5 百炼 API 配置
 
-- 接口：OpenAI 兼容，`POST /compatible-mode/v1/chat/completions`
-- 鉴权：`Authorization: Bearer <AI_API_KEY>`
+- **SDK：** `openai` npm 包（OpenAI 兼容模式）
+  ```ts
+  import OpenAI from 'openai';
+  const client = new OpenAI({
+    apiKey: process.env.AI_API_KEY,
+    baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+  });
+  ```
 - 模型：`qwen-plus`（默认，以百炼文档为准）
 - 响应：阻塞式（非流式），等完整回复
+- **后续优化：** 流式传输需修改 API 契约（后端改为 SSE，前端改用 EventSource 或 fetch ReadableStream），留待后续迭代
 
 ### 3.6 环境变量
 
@@ -208,7 +215,7 @@ import { ChatWidget } from './components/ChatWidget';
 
 ## 7. 约束
 
-- 不引入新 npm 包（百炼调用用 `fetch`，UUID 用 `crypto.randomUUID()`）
+- 后端引入 `openai` npm 包（OpenAI 兼容模式调百炼），UUID 用浏览器内置 `crypto.randomUUID()`
 - 历史消息不做截断（个人应用，数据量小）
 - AI 回复为阻塞式，非流式
 - `ChatHistory` 表无需迁移，已存在于 schema
