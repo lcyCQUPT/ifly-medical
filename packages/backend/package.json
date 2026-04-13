@@ -1,0 +1,17 @@
+{
+  "name": "@ifly-medical/backend",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "nodemon",
+    "start": "node dist/index.js",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@ifly-medical/shared": "workspace:*",
+    "@prisma/client": "^7.7.0",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "multer": "^2.1.1"
+  }
+}
