@@ -74,7 +74,7 @@ export async function sendMessage(
     messages,
   });
 
-  const reply = completion.choices[0].message.content ?? '';
+  const reply = completion.choices[0]?.message?.content ?? '';
 
   // AI 回复单独插入，时间戳必然晚于用户消息，顺序稳定
   await prisma.chatHistory.create({
