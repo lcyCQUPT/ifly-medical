@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
-import { Table, Button, Drawer, Descriptions, Popconfirm, Space, Typography } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { Table, Button, Drawer, Descriptions, Popconfirm, Space, Typography, Upload } from 'antd';
+import { PlusOutlined, UploadOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { Visit } from '@ifly-medical/shared';
-import { useVisits, useDeleteVisit } from '../api/visits';
+import { useVisits, useDeleteVisit, useUploadAttachment } from '../api/visits';
 import { VisitForm } from '../components/VisitForm';
 
 type DrawerMode = 'detail' | 'create' | 'edit' | null;
@@ -15,6 +15,7 @@ export function VisitsPage() {
 
   const { data, isLoading } = useVisits(page);
   const deleteVisit = useDeleteVisit();
+  const uploadAttachment = useUploadAttachment();
 
   const columns = useMemo(() => [
     {
@@ -116,6 +117,47 @@ export function VisitsPage() {
             >
               创建时间：{dayjs(selectedVisit.createdAt).format('YYYY-MM-DD HH:mm')}
             </Typography.Text>
+            <div style={{ marginTop: 16 }}>
+              <Typography.Text strong>附件</Typography.Text>
+              {selectedVisit.attachments && selectedVisit.attachments.length > 0 ? (
+                <ul style={{ paddingLeft: 16, marginTop: 8 }}>
+                  {selectedVisit.attachments.map((att) => (
+                    <li key={att.url} style={{ marginBottom: 4 }}>
+                      <a href={att.url} target="_blank" rel="noreferrer">{att.name}</a>
+                      <Typography.Text type="secondary" style={{ marginLeft: 8 }}>
+                        {(att.size / 1024).toFixed(1)} KB
+                      </Typography.Text>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <Typography.Text type="secondary" style={{ display: 'block', marginTop: 4 }}>
+                  暂无附件
+                </Typography.Text>
+              )}
+              <Upload
+                accept=".jpg,.jpeg,.png,.pdf"
+                showUploadList={false}
+                beforeUpload={(file) => {
+                  uploadAttachment.mutate(
+                    { id: selectedVisit.id, file },
+                    {
+                      onSuccess: (newAtt) => {
+                        setSelectedVisit(prev =>
+                          prev ? { ...prev, attachments: [...(prev.attachments ?? []), newAtt] } : null
+                        );
+                      },
+                    }
+                  );
+                  return false;
+                }}
+              >
+                <Button icon={<UploadOutlined />} loading={uploadAttachment.isPending} style={{ marginTop: 8 }}>
+                  上传附件
+                </Button>
+              </Upload>
+            </div>
+
             <Space style={{ marginTop: 24 }}>
               <Button type="primary" onClick={() => setDrawerMode('edit')}>编辑</Button>
               <Popconfirm

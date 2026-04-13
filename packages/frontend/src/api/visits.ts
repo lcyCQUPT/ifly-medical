@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Visit } from '@ifly-medical/shared';
+import type { Visit, Attachment } from '@ifly-medical/shared';
 
 export interface VisitInput {
   visitDate: string;
@@ -57,6 +57,22 @@ export function useDeleteVisit() {
   return useMutation({
     mutationFn: (id: number) =>
       axios.delete<{ success: boolean }>(`/api/visits/${id}`).then(r => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['visits'] });
+    },
+  });
+}
+
+export function useUploadAttachment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, file }: { id: number; file: File }) => {
+      const form = new FormData();
+      form.append('file', file);
+      return axios
+        .post<{ data: Attachment }>(`/api/visits/${id}/attachments`, form)
+        .then(r => r.data.data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['visits'] });
     },
