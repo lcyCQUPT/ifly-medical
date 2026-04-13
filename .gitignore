@@ -2,6 +2,8 @@ node_modules/
 dist/
 .env
 packages/backend/prisma/dev.db
+packages/backend/prisma/prisma/dev.db
+packages/backend/prisma/prisma/dev.db-journal
 packages/backend/uploads/
 *.log
 .DS_Store
