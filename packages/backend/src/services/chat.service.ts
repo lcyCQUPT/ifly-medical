@@ -70,7 +70,7 @@ export async function sendMessage(
   ];
 
   const completion = await openai.chat.completions.create({
-    model: 'qwen-plus',
+    model: process.env.AI_MODEL || 'qwen-plus',
     messages,
   });
 
