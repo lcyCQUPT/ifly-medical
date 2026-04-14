@@ -7,3 +7,4 @@ packages/backend/prisma/prisma/dev.db-journal
 packages/backend/uploads/
 *.log
 .DS_Store
+.worktrees/
