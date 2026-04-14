@@ -1,13 +1,13 @@
-import axios from 'axios';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { ChatMessage, ChatSession } from '@ifly-medical/shared';
+import { chatMessageCreateSchema, type ChatMessage, type ChatSession } from '@ifly-medical/shared';
+import http from './http';
 
 export type { ChatMessage, ChatSession };
 
 export function useSessions() {
   return useQuery<ChatSession[]>({
     queryKey: ['chat-sessions'],
-    queryFn: () => axios.get<ChatSession[]>('/api/chat/history').then((r) => r.data),
+    queryFn: () => http.get<ChatSession[]>('/api/chat/history').then((r) => r.data),
   });
 }
 
@@ -15,7 +15,7 @@ export function useSessionMessages(sessionId?: string) {
   return useQuery<ChatMessage[]>({
     queryKey: ['chat-messages', sessionId],
     queryFn: () =>
-      axios.get<ChatMessage[]>(`/api/chat/history/${sessionId}`).then((r) => r.data),
+      http.get<ChatMessage[]>(`/api/chat/history/${sessionId}`).then((r) => r.data),
     enabled: !!sessionId,
   });
 }
@@ -24,8 +24,8 @@ export function useSendMessage() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: { sessionId: string; content: string }) =>
-      axios
-        .post<{ reply: string; sessionId: string }>('/api/chat', data)
+      http
+        .post<{ reply: string; sessionId: string }>('/api/chat', chatMessageCreateSchema.parse(data))
         .then((r) => r.data),
     onSuccess: (_result, variables) => {
       queryClient.invalidateQueries({ queryKey: ['chat-messages', variables.sessionId] });
@@ -38,7 +38,7 @@ export function useDeleteSession() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (sessionId: string) =>
-      axios.delete(`/api/chat/history/${sessionId}`).then(() => undefined),
+      http.delete(`/api/chat/history/${sessionId}`).then(() => undefined),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['chat-sessions'] });
     },

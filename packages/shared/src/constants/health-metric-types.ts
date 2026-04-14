@@ -8,6 +8,14 @@ export const HealthMetricType = {
 
 export type HealthMetricTypeValue = typeof HealthMetricType[keyof typeof HealthMetricType];
 
+export const HEALTH_METRIC_TYPE_VALUES = [
+  HealthMetricType.SYSTOLIC_BLOOD_PRESSURE,
+  HealthMetricType.DIASTOLIC_BLOOD_PRESSURE,
+  HealthMetricType.BLOOD_SUGAR,
+  HealthMetricType.WEIGHT,
+  HealthMetricType.HEART_RATE,
+] as const satisfies readonly [HealthMetricTypeValue, ...HealthMetricTypeValue[]];
+
 export const HealthMetricLabels: Record<HealthMetricTypeValue, string> = {
   systolic_blood_pressure: '收缩压',
   diastolic_blood_pressure: '舒张压',

@@ -2,6 +2,8 @@ import { Form, Input, DatePicker, Button, Space } from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
 import type { Visit } from '@ifly-medical/shared';
 import { useCreateVisit, useUpdateVisit, type VisitInput } from '../api/visits';
+import { getErrorMessage } from '../utils/error';
+import { notifyError } from '../utils/message';
 
 interface FormValues {
   visitDate: Dayjs;
@@ -48,9 +50,18 @@ export function VisitForm({ visit, onSuccess, onCancel }: Props) {
       notes: values.notes ?? null,
     };
     if (visit) {
-      updateVisit.mutate({ id: visit.id, data }, { onSuccess });
+      updateVisit.mutate(
+        { id: visit.id, data },
+        {
+          onSuccess,
+          onError: (error) => notifyError(getErrorMessage(error, '更新就诊记录失败')),
+        }
+      );
     } else {
-      createVisit.mutate(data, { onSuccess });
+      createVisit.mutate(data, {
+        onSuccess,
+        onError: (error) => notifyError(getErrorMessage(error, '新建就诊记录失败')),
+      });
     }
   }
 

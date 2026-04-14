@@ -1,100 +1,53 @@
 import { Request, Response } from 'express';
+import type { Attachment, VisitCreateInput, VisitUpdateInput } from '@ifly-medical/shared';
+import { getRequestUser } from '../types/request-user';
 import * as visitService from '../services/visit.service';
 import { uploadSingle, UPLOAD_ERROR } from '../middleware/upload';
+import { getValidated } from '../middleware/validate';
+import { env } from '../config/env';
+import { AppError } from '../lib/app-error';
 
 export async function getVisits(req: Request, res: Response) {
-  const pageParam = typeof req.query.page === 'string' ? req.query.page : '';
-  const limitParam = typeof req.query.limit === 'string' ? req.query.limit : '';
-  const page = Math.max(1, parseInt(pageParam) || 1);
-  const limit = Math.max(1, parseInt(limitParam) || 10);
-  const result = await visitService.getVisits(page, limit);
+  const { page, limit } = getValidated<{ page: number; limit: number }>(res, 'query');
+  const result = await visitService.getVisits(getRequestUser(req).userId, page, limit);
   res.json(result);
 }
 
 export async function getVisit(req: Request, res: Response) {
-  const idParam = typeof req.params.id === 'string' ? req.params.id : '';
-  const id = parseInt(idParam, 10);
-  if (isNaN(id)) {
-    res.status(400).json({ error: '无效的记录 ID' });
-    return;
-  }
-  const visit = await visitService.getVisit(id);
-  if (!visit) {
-    res.status(404).json({ error: '就诊记录不存在' });
-    return;
-  }
+  const { id } = getValidated<{ id: number }>(res, 'params');
+  const visit = await visitService.getVisit(getRequestUser(req).userId, id);
   res.json(visit);
 }
 
 export async function createVisit(req: Request, res: Response) {
-  const { visitDate, hospital, department, chiefComplaint, diagnosis, doctorAdvice, notes } = req.body;
-  if (!visitDate || typeof visitDate !== 'string') {
-    res.status(400).json({ error: '就诊日期为必填项' });
-    return;
-  }
-  if (!hospital || typeof hospital !== 'string') {
-    res.status(400).json({ error: '医院为必填项' });
-    return;
-  }
-  const visit = await visitService.createVisit({
-    visitDate: new Date(visitDate),
-    hospital,
-    department: department ?? null,
-    chiefComplaint: chiefComplaint ?? null,
-    diagnosis: diagnosis ?? null,
-    doctorAdvice: doctorAdvice ?? null,
-    notes: notes ?? null,
+  const body = req.body as VisitCreateInput;
+  const visit = await visitService.createVisit(getRequestUser(req).userId, {
+    ...body,
+    visitDate: new Date(body.visitDate),
   });
   res.status(201).json(visit);
 }
 
 export async function updateVisit(req: Request, res: Response) {
-  const idParam = typeof req.params.id === 'string' ? req.params.id : '';
-  const id = parseInt(idParam, 10);
-  if (isNaN(id)) {
-    res.status(400).json({ error: '无效的记录 ID' });
-    return;
-  }
-  const { visitDate, hospital, department, chiefComplaint, diagnosis, doctorAdvice, notes } = req.body;
-  const data: Partial<visitService.VisitInput> = {};
-  if (visitDate !== undefined) data.visitDate = new Date(visitDate);
-  if (hospital !== undefined) data.hospital = hospital;
-  if (department !== undefined) data.department = department ?? null;
-  if (chiefComplaint !== undefined) data.chiefComplaint = chiefComplaint ?? null;
-  if (diagnosis !== undefined) data.diagnosis = diagnosis ?? null;
-  if (doctorAdvice !== undefined) data.doctorAdvice = doctorAdvice ?? null;
-  if (notes !== undefined) data.notes = notes ?? null;
-
-  const visit = await visitService.updateVisit(id, data);
-  if (!visit) {
-    res.status(404).json({ error: '就诊记录不存在' });
-    return;
-  }
+  const { id } = getValidated<{ id: number }>(res, 'params');
+  const body = req.body as VisitUpdateInput;
+  const visit = await visitService.updateVisit(getRequestUser(req).userId, id, {
+    ...body,
+    visitDate: body.visitDate ? new Date(body.visitDate) : undefined,
+  });
   res.json(visit);
 }
 
 export async function deleteVisit(req: Request, res: Response) {
-  const idParam = typeof req.params.id === 'string' ? req.params.id : '';
-  const id = parseInt(idParam, 10);
-  if (isNaN(id)) {
-    res.status(400).json({ error: '无效的记录 ID' });
-    return;
-  }
-  const ok = await visitService.deleteVisit(id);
-  if (!ok) {
-    res.status(404).json({ error: '就诊记录不存在' });
-    return;
-  }
+  const { id } = getValidated<{ id: number }>(res, 'params');
+  await visitService.deleteVisit(getRequestUser(req).userId, id);
   res.json({ success: true });
 }
 
 export async function uploadAttachment(req: Request, res: Response) {
-  const idParam = typeof req.params.id === 'string' ? req.params.id : '';
-  const id = parseInt(idParam, 10);
-  if (isNaN(id)) {
-    res.status(400).json({ error: '无效的记录 ID' });
-    return;
-  }
+  const { id } = getValidated<{ id: number }>(res, 'params');
+
+  await visitService.getVisit(getRequestUser(req).userId, id);
 
   const ok = await new Promise<boolean>((resolve) => {
     uploadSingle(req, res, (err) => {
@@ -109,23 +62,23 @@ export async function uploadAttachment(req: Request, res: Response) {
   if (!ok) return;
 
   if (!req.file) {
-    res.status(400).json({ error: '未收到文件' });
-    return;
+    throw new AppError(400, 'FILE_NOT_RECEIVED', '未收到文件');
   }
 
   const originalName = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
-  const attachment = {
+  const attachment: Attachment = {
     name: originalName,
-    url: `${req.protocol}://${req.get('host')}/uploads/visits/${id}/${req.file.filename}`,
+    url: `${env.baseUrl}/uploads/visits/${id}/${req.file.filename}`,
     size: req.file.size,
     uploadedAt: new Date().toISOString(),
   };
 
-  const visit = await visitService.addAttachment(id, attachment);
-  if (!visit) {
-    res.status(404).json({ error: '就诊记录不存在' });
-    return;
-  }
-
+  await visitService.addAttachment(getRequestUser(req).userId, id, attachment);
   res.json({ data: attachment });
+}
+
+export async function deleteAttachment(req: Request, res: Response) {
+  const { id, filename } = getValidated<{ id: number; filename: string }>(res, 'params');
+  await visitService.removeAttachment(getRequestUser(req).userId, id, filename);
+  res.json({ success: true });
 }

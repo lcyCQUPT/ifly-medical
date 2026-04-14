@@ -2,9 +2,11 @@ import { Form, Input, Select, DatePicker, InputNumber, Button, Space } from 'ant
 import dayjs, { Dayjs } from 'dayjs';
 import type { Profile } from '@ifly-medical/shared';
 import { useUpsertProfile, type ProfileInput } from '../api/profile';
+import { getErrorMessage } from '../utils/error';
+import { notifyError } from '../utils/message';
 
 interface FormValues {
-  name: string;
+  name?: string;
   gender?: string;
   birthDate?: Dayjs;
   bloodType?: string;
@@ -41,7 +43,7 @@ export function ProfileForm({ profile, onSuccess, onCancel }: Props) {
 
   function handleFinish(values: FormValues) {
     const data: ProfileInput = {
-      name: values.name,
+      name: values.name ?? '',
       gender: values.gender ?? null,
       birthDate: values.birthDate ? values.birthDate.toISOString() : null,
       bloodType: values.bloodType ?? null,
@@ -50,7 +52,10 @@ export function ProfileForm({ profile, onSuccess, onCancel }: Props) {
       allergies: values.allergies ?? null,
       chronicDiseases: values.chronicDiseases ?? null,
     };
-    mutate(data, { onSuccess });
+    mutate(data, {
+      onSuccess,
+      onError: (error) => notifyError(getErrorMessage(error, '保存档案失败')),
+    });
   }
 
   return (
@@ -83,8 +88,10 @@ export function ProfileForm({ profile, onSuccess, onCancel }: Props) {
 
       <Form.Item name="bloodType" label="血型">
         <Select allowClear placeholder="请选择">
-          {BLOOD_TYPES.map(t => (
-            <Select.Option key={t} value={t}>{t}</Select.Option>
+          {BLOOD_TYPES.map((t) => (
+            <Select.Option key={t} value={t}>
+              {t}
+            </Select.Option>
           ))}
         </Select>
       </Form.Item>

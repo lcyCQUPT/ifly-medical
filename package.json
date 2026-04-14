@@ -4,7 +4,7 @@
   "scripts": {
     "dev:frontend": "pnpm --filter frontend dev",
     "dev:backend": "pnpm --filter backend dev",
-    "build": "pnpm --filter frontend build"
+    "build": "pnpm --filter '@ifly-medical/shared' build && pnpm --filter '@ifly-medical/backend' build && pnpm --filter frontend build"
   },
   "devDependencies": {
     "typescript": "^6.0.2"

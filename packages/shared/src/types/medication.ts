@@ -9,3 +9,8 @@ export interface Medication {
   visitId?: number;
   notes?: string;
 }
+
+export interface PaginatedMedications {
+  data: Medication[];
+  total: number;
+}

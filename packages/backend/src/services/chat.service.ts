@@ -1,17 +1,21 @@
 import OpenAI from 'openai';
 import type { ChatMessage, ChatSession } from '@ifly-medical/shared';
 import prisma from '../lib/prisma';
+import { env } from '../config/env';
+import { AppError } from '../lib/app-error';
 
 const openai = new OpenAI({
-  apiKey: process.env.AI_API_KEY || 'MISSING_KEY',
+  apiKey: env.aiApiKey ?? undefined,
   baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
 });
 
 const SYSTEM_PROMPT =
   '你是专业的健康助手，根据用户信息给出健康建议，仅供参考，不构成医疗诊断。';
+const MAX_HISTORY_MESSAGES = 20;
 
-export async function getSessions(): Promise<ChatSession[]> {
+export async function getSessions(userId: number): Promise<ChatSession[]> {
   const all = await prisma.chatHistory.findMany({
+    where: { userId },
     orderBy: { createdAt: 'desc' },
   });
   const seen = new Set<string>();
@@ -29,9 +33,9 @@ export async function getSessions(): Promise<ChatSession[]> {
   return sessions;
 }
 
-export async function getSessionMessages(sessionId: string): Promise<ChatMessage[]> {
+export async function getSessionMessages(userId: number, sessionId: string): Promise<ChatMessage[]> {
   const msgs = await prisma.chatHistory.findMany({
-    where: { sessionId },
+    where: { userId, sessionId },
     orderBy: { createdAt: 'asc' },
   });
   return msgs.map((m) => ({
@@ -43,42 +47,46 @@ export async function getSessionMessages(sessionId: string): Promise<ChatMessage
   }));
 }
 
-export async function deleteSession(sessionId: string): Promise<void> {
-  await prisma.chatHistory.deleteMany({ where: { sessionId } });
+export async function deleteSession(userId: number, sessionId: string): Promise<void> {
+  await prisma.chatHistory.deleteMany({ where: { userId, sessionId } });
 }
 
 export async function sendMessage(
+  userId: number,
   sessionId: string,
   userContent: string
 ): Promise<{ reply: string; sessionId: string }> {
-  // 先存用户消息，确保即使 AI 调用失败也不丢失
+  if (!env.aiApiKey) {
+    throw new AppError(503, 'AI_SERVICE_NOT_CONFIGURED', 'AI service is not configured');
+  }
+
   await prisma.chatHistory.create({
-    data: { sessionId, role: 'user', content: userContent },
+    data: { userId, sessionId, role: 'user', content: userContent },
   });
 
   const history = await prisma.chatHistory.findMany({
-    where: { sessionId },
-    orderBy: { createdAt: 'asc' },
+    where: { userId, sessionId },
+    orderBy: { createdAt: 'desc' },
+    take: MAX_HISTORY_MESSAGES,
   });
 
   const messages: OpenAI.ChatCompletionMessageParam[] = [
     { role: 'system', content: SYSTEM_PROMPT },
-    ...history.map((h) => ({
+    ...history.reverse().map((h) => ({
       role: h.role as 'user' | 'assistant',
       content: h.content,
     })),
   ];
 
   const completion = await openai.chat.completions.create({
-    model: process.env.AI_MODEL || 'qwen-plus',
+    model: env.aiModel,
     messages,
   });
 
   const reply = completion.choices[0]?.message?.content ?? '';
 
-  // AI 回复单独插入，时间戳必然晚于用户消息，顺序稳定
   await prisma.chatHistory.create({
-    data: { sessionId, role: 'assistant', content: reply },
+    data: { userId, sessionId, role: 'assistant', content: reply },
   });
 
   return { reply, sessionId };

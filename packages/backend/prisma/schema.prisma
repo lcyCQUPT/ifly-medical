@@ -7,8 +7,21 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id           Int           @id @default(autoincrement())
+  username     String        @unique
+  passwordHash String
+  createdAt    DateTime      @default(now())
+  profile      Profile?
+  visits       Visit[]
+  medications  Medication[]
+  metrics      HealthMetric[]
+  chatHistory  ChatHistory[]
+}
+
 model Profile {
   id              Int       @id @default(autoincrement())
+  userId          Int       @unique
   name            String
   gender          String?
   birthDate       DateTime?
@@ -18,10 +31,12 @@ model Profile {
   allergies       String?
   chronicDiseases String?
   updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Visit {
   id             Int            @id @default(autoincrement())
+  userId         Int
   visitDate      DateTime
   hospital       String
   department     String?
@@ -31,12 +46,16 @@ model Visit {
   attachments    String?
   notes          String?
   createdAt      DateTime       @default(now())
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   medications    Medication[]
   metrics        HealthMetric[]
+
+  @@index([userId])
 }
 
 model Medication {
   id        Int       @id @default(autoincrement())
+  userId    Int
   name      String
   dosage    String?
   frequency String?
@@ -46,10 +65,14 @@ model Medication {
   visitId   Int?
   visit     Visit?    @relation(fields: [visitId], references: [id])
   notes     String?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model HealthMetric {
   id         Int      @id @default(autoincrement())
+  userId     Int
   type       String
   value      Float
   unit       String?
@@ -57,12 +80,20 @@ model HealthMetric {
   visitId    Int?
   visit      Visit?   @relation(fields: [visitId], references: [id])
   notes      String?
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model ChatHistory {
   id        Int      @id @default(autoincrement())
+  userId    Int
   sessionId String
   role      String
   content   String
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, sessionId])
 }

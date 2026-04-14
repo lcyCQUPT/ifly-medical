@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useRef, useEffect, useMemo, useState } from 'react';
 import { Button, Input, List, Typography, Spin, Tooltip, Empty } from 'antd';
 import {
   DeleteOutlined,
@@ -21,8 +21,6 @@ interface Props {
 
 export function ChatPanel({ currentSessionId, onSessionChange, onClose }: Props) {
   const [input, setInput] = useState('');
-  // 本地暂存：发送后立即显示用户消息，不等待服务端响应
-  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { data: sessions = [] } = useSessions();
@@ -31,21 +29,27 @@ export function ChatPanel({ currentSessionId, onSessionChange, onClose }: Props)
   const sendMessage = useSendMessage();
   const deleteSession = useDeleteSession();
 
+  const pendingMessage =
+    sendMessage.isPending && sendMessage.variables?.sessionId === currentSessionId
+      ? sendMessage.variables.content
+      : null;
+
+  const displayMessages: Array<ChatMessage | { id: string; role: string; content: string; pending: true }> =
+    useMemo(
+      () =>
+        pendingMessage
+          ? [...messages, { id: 'pending-user', role: 'user', content: pendingMessage, pending: true as const }]
+          : messages,
+      [messages, pendingMessage]
+    );
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, pendingMessage]);
-
-  // AI 回复到达后清除 pending 消息
-  useEffect(() => {
-    if (!sendMessage.isPending) {
-      setPendingMessage(null);
-    }
-  }, [sendMessage.isPending]);
+  }, [displayMessages, sendMessage.isPending]);
 
   function handleNewSession() {
     onSessionChange(crypto.randomUUID());
     setInput('');
-    setPendingMessage(null);
   }
 
   function handleAttachProfile() {
@@ -67,7 +71,6 @@ export function ChatPanel({ currentSessionId, onSessionChange, onClose }: Props)
     const sessionId = currentSessionId ?? crypto.randomUUID();
     if (!currentSessionId) onSessionChange(sessionId);
     setInput('');
-    setPendingMessage(content);
     sendMessage.mutate({ sessionId, content });
   }
 
@@ -76,17 +79,10 @@ export function ChatPanel({ currentSessionId, onSessionChange, onClose }: Props)
       onSuccess: () => {
         if (currentSessionId === sessionId) {
           onSessionChange(null);
-          setPendingMessage(null);
         }
       },
     });
   }
-
-  // 已确认的消息 + 本地 pending 消息合并展示
-  const displayMessages: Array<ChatMessage | { id: string; role: string; content: string; pending: true }> =
-    pendingMessage
-      ? [...messages, { id: 'pending-user', role: 'user', content: pendingMessage, pending: true as const }]
-      : messages;
 
   return (
     <div
@@ -105,7 +101,6 @@ export function ChatPanel({ currentSessionId, onSessionChange, onClose }: Props)
         zIndex: 999,
       }}
     >
-      {/* Header */}
       <div
         style={{
           background: '#1677ff',
@@ -138,9 +133,7 @@ export function ChatPanel({ currentSessionId, onSessionChange, onClose }: Props)
         </div>
       </div>
 
-      {/* Body */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-        {/* Session list */}
         <div
           style={{
             width: 180,
@@ -171,7 +164,10 @@ export function ChatPanel({ currentSessionId, onSessionChange, onClose }: Props)
                     <DeleteOutlined
                       key="del"
                       style={{ color: '#ff4d4f', fontSize: 12 }}
-                      onClick={(e) => { e.stopPropagation(); handleDeleteSession(s.sessionId); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteSession(s.sessionId);
+                      }}
                     />,
                   ]}
                 >
@@ -189,7 +185,6 @@ export function ChatPanel({ currentSessionId, onSessionChange, onClose }: Props)
           )}
         </div>
 
-        {/* Messages area */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px' }}>
             {!currentSessionId ? (
@@ -236,7 +231,6 @@ export function ChatPanel({ currentSessionId, onSessionChange, onClose }: Props)
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input area */}
           <div
             style={{
               padding: '8px 12px',
