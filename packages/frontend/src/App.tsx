@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import { lazy, Suspense, type ReactElement } from 'react';
 import { Layout, Menu, Button, Spin, Typography } from 'antd';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -8,15 +8,23 @@ import {
   UserOutlined,
   LogoutOutlined,
 } from '@ant-design/icons';
-import { VisitsPage } from './pages/VisitsPage';
-import { MedicationsPage } from './pages/MedicationsPage';
-import { MetricsPage } from './pages/MetricsPage';
-import { ProfilePage } from './pages/ProfilePage';
 import { AuthPage } from './pages/AuthPage';
 import { ChatWidget } from './components/ChatWidget';
 import { useAuth } from './contexts/useAuth';
 
 const { Sider, Content } = Layout;
+const VisitsPage = lazy(() =>
+  import('./pages/VisitsPage').then((module) => ({ default: module.VisitsPage }))
+);
+const MedicationsPage = lazy(() =>
+  import('./pages/MedicationsPage').then((module) => ({ default: module.MedicationsPage }))
+);
+const MetricsPage = lazy(() =>
+  import('./pages/MetricsPage').then((module) => ({ default: module.MetricsPage }))
+);
+const ProfilePage = lazy(() =>
+  import('./pages/ProfilePage').then((module) => ({ default: module.ProfilePage }))
+);
 
 type PageKey = 'profile' | 'visits' | 'medications' | 'metrics';
 
@@ -72,14 +80,29 @@ function MainLayout() {
           </div>
         </Sider>
         <Content style={{ background: '#f5f5f5' }}>
-          <Routes>
-            <Route path="/" element={<Navigate to="/profile" replace />} />
-            <Route path="/profile" element={<PrivateRoute element={<ProfilePage />} />} />
-            <Route path="/visits" element={<PrivateRoute element={<VisitsPage />} />} />
-            <Route path="/medications" element={<PrivateRoute element={<MedicationsPage />} />} />
-            <Route path="/metrics" element={<PrivateRoute element={<MetricsPage />} />} />
-            <Route path="*" element={<Navigate to='/profile' replace />} />
-          </Routes>
+          <Suspense
+            fallback={
+              <div
+                style={{
+                  minHeight: '100vh',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Spin size="large" />
+              </div>
+            }
+          >
+            <Routes>
+              <Route path="/" element={<Navigate to="/profile" replace />} />
+              <Route path="/profile" element={<PrivateRoute element={<ProfilePage />} />} />
+              <Route path="/visits" element={<PrivateRoute element={<VisitsPage />} />} />
+              <Route path="/medications" element={<PrivateRoute element={<MedicationsPage />} />} />
+              <Route path="/metrics" element={<PrivateRoute element={<MetricsPage />} />} />
+              <Route path="*" element={<Navigate to='/profile' replace />} />
+            </Routes>
+          </Suspense>
         </Content>
       </Layout>
       {user ? <ChatWidget /> : null}

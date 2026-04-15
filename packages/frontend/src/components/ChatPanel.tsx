@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo, useState } from 'react';
+import { useRef, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Button, Input, List, Typography, Spin, Tooltip, Empty } from 'antd';
 import {
   DeleteOutlined,
@@ -8,10 +8,39 @@ import {
   SendOutlined,
 } from '@ant-design/icons';
 import type { ChatMessage, ChatSession } from '@ifly-medical/shared';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useSessions, useSessionMessages, useSendMessage, useDeleteSession } from '../api/chat';
 import { useProfile } from '../api/profile';
 
 const { Text } = Typography;
+const QUICK_PROMPTS = [
+  '血压偏高，日常饮食有哪些注意事项？',
+  '最近睡眠质量差，有什么改善建议？',
+  '我的慢性病用药需要注意什么？',
+];
+
+const markdownComponents = {
+  p: ({ children }: { children?: ReactNode }) => <p style={{ margin: 0 }}>{children}</p>,
+  ul: ({ children }: { children?: ReactNode }) => (
+    <ul style={{ paddingLeft: 16, margin: '4px 0' }}>{children}</ul>
+  ),
+  ol: ({ children }: { children?: ReactNode }) => (
+    <ol style={{ paddingLeft: 16, margin: '4px 0' }}>{children}</ol>
+  ),
+  code: ({ children }: { children?: ReactNode }) => (
+    <code
+      style={{
+        background: 'rgba(0,0,0,.06)',
+        borderRadius: 3,
+        padding: '0 4px',
+        fontSize: '0.92em',
+      }}
+    >
+      {children}
+    </code>
+  ),
+};
 
 interface Props {
   currentSessionId: string | null;
@@ -47,9 +76,9 @@ export function ChatPanel({ currentSessionId, onSessionChange, onClose }: Props)
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [displayMessages, sendMessage.isPending]);
 
-  function handleNewSession() {
+  function handleNewSession(nextInput = '') {
     onSessionChange(crypto.randomUUID());
-    setInput('');
+    setInput(nextInput);
   }
 
   function handleAttachProfile() {
@@ -120,7 +149,7 @@ export function ChatPanel({ currentSessionId, onSessionChange, onClose }: Props)
             <Button
               size="small"
               icon={<PlusOutlined />}
-              onClick={handleNewSession}
+              onClick={() => handleNewSession()}
               style={{ color: '#fff', background: 'transparent', border: '1px solid rgba(255,255,255,.5)' }}
             />
           </Tooltip>
@@ -188,7 +217,23 @@ export function ChatPanel({ currentSessionId, onSessionChange, onClose }: Props)
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px' }}>
             {!currentSessionId ? (
-              <Empty description="选择历史会话或点击「新对话」开始" style={{ marginTop: 60 }} />
+              <Empty
+                description="选择历史会话或点击「新对话」开始"
+                style={{ marginTop: 60 }}
+              >
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+                  {QUICK_PROMPTS.map((prompt) => (
+                    <Button
+                      key={prompt}
+                      type="default"
+                      size="small"
+                      onClick={() => handleNewSession(prompt)}
+                    >
+                      {prompt}
+                    </Button>
+                  ))}
+                </div>
+              </Empty>
             ) : displayMessages.length === 0 ? (
               <div style={{ textAlign: 'center', color: '#999', marginTop: 60, fontSize: 13 }}>
                 发送消息开始对话
@@ -212,11 +257,16 @@ export function ChatPanel({ currentSessionId, onSessionChange, onClose }: Props)
                       color: msg.role === 'user' ? '#fff' : '#333',
                       fontSize: 13,
                       lineHeight: 1.6,
-                      whiteSpace: 'pre-wrap',
                       wordBreak: 'break-word',
                     }}
                   >
-                    {msg.content}
+                    {msg.role === 'assistant' ? (
+                      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                        {msg.content}
+                      </ReactMarkdown>
+                    ) : (
+                      <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
+                    )}
                   </div>
                 </div>
               ))

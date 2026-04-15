@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { chatMessageCreateSchema, type ChatMessage, type ChatSession } from '@ifly-medical/shared';
 import http from './http';
+import { getErrorMessage } from '../utils/error';
+import { notifyError } from '../utils/message';
 
 export type { ChatMessage, ChatSession };
 
@@ -30,6 +32,9 @@ export function useSendMessage() {
     onSuccess: (_result, variables) => {
       queryClient.invalidateQueries({ queryKey: ['chat-messages', variables.sessionId] });
       queryClient.invalidateQueries({ queryKey: ['chat-sessions'] });
+    },
+    onError: (error) => {
+      notifyError(getErrorMessage(error, '消息发送失败，请稍后重试'));
     },
   });
 }

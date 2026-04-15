@@ -60,6 +60,13 @@ export async function sendMessage(
     throw new AppError(503, 'AI_SERVICE_NOT_CONFIGURED', 'AI service is not configured');
   }
 
+  const collision = await prisma.chatHistory.findFirst({
+    where: { sessionId, NOT: { userId } },
+  });
+  if (collision) {
+    throw new AppError(400, 'SESSION_ID_CONFLICT', 'sessionId 已被其他用户使用');
+  }
+
   await prisma.chatHistory.create({
     data: { userId, sessionId, role: 'user', content: userContent },
   });

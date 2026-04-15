@@ -1,6 +1,9 @@
-import { useState } from 'react';
-import { Button } from 'antd';
-import { ChatPanel } from './ChatPanel';
+import { lazy, Suspense, useState } from 'react';
+import { Button, Spin } from 'antd';
+
+const ChatPanel = lazy(() =>
+  import('./ChatPanel').then((module) => ({ default: module.ChatPanel }))
+);
 
 export function ChatWidget() {
   const [open, setOpen] = useState(false);
@@ -9,11 +12,13 @@ export function ChatWidget() {
   return (
     <>
       {open && (
-        <ChatPanel
-          currentSessionId={currentSessionId}
-          onSessionChange={setCurrentSessionId}
-          onClose={() => setOpen(false)}
-        />
+        <Suspense fallback={<Spin style={{ display: 'block', margin: '40px auto' }} />}>
+          <ChatPanel
+            currentSessionId={currentSessionId}
+            onSessionChange={setCurrentSessionId}
+            onClose={() => setOpen(false)}
+          />
+        </Suspense>
       )}
       <Button
         type="primary"

@@ -11,7 +11,14 @@ export async function postMessage(req: Request, res: Response) {
   try {
     const result = await chatService.sendMessage(getRequestUser(req).userId, sessionId, content);
     res.json(result);
-  } catch {
+  } catch (err) {
+    if (err instanceof AppError) {
+      throw err;
+    }
+    const status = (err as { status?: number } | undefined)?.status;
+    if (status === 429) {
+      throw new AppError(429, 'AI_QUOTA_EXCEEDED', 'AI 配额已用尽，请稍后重试');
+    }
     throw new AppError(500, 'AI_SERVICE_UNAVAILABLE', 'AI 服务暂时不可用，请稍后重试');
   }
 }

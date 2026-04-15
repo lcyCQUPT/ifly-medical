@@ -91,15 +91,16 @@ export async function removeAttachment(userId: number, visitId: number, filename
   if (filtered.length === list.length) {
     throw new AppError(404, 'ATTACHMENT_NOT_FOUND', '附件不存在');
   }
-  const updated = toDto(
-    await prisma.visit.update({ where: { id: visitId }, data: { attachments: JSON.stringify(filtered) } })
-  );
   const safeFilename = path.basename(filename);
   const filePath = path.join(__dirname, '../../uploads/visits', String(visitId), safeFilename);
-  fs.unlink(filePath, (err) => {
-    if (err) {
+  try {
+    await fs.promises.unlink(filePath);
+  } catch (err: any) {
+    if (err.code !== 'ENOENT') {
       console.warn('[visit.service] Failed to delete file:', filePath, err.message);
     }
-  });
-  return updated;
+  }
+  return toDto(
+    await prisma.visit.update({ where: { id: visitId }, data: { attachments: JSON.stringify(filtered) } })
+  );
 }
