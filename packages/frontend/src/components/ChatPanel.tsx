@@ -12,13 +12,9 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useSessions, useSessionMessages, useSendMessage, useDeleteSession } from '../api/chat';
 import { useProfile } from '../api/profile';
+import { QUICK_PROMPTS, pendingPromptStore } from '../constants/chat';
 
 const { Text } = Typography;
-const QUICK_PROMPTS = [
-  '血压偏高，日常饮食有哪些注意事项？',
-  '最近睡眠质量差，有什么改善建议？',
-  '我的慢性病用药需要注意什么？',
-];
 
 const markdownComponents = {
   p: ({ children }: { children?: ReactNode }) => <p style={{ margin: 0 }}>{children}</p>,
@@ -75,6 +71,20 @@ export function ChatPanel({ currentSessionId, onSessionChange, onClose }: Props)
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [displayMessages, sendMessage.isPending]);
+
+  useEffect(() => {
+    if (pendingPromptStore.value) {
+      setInput(pendingPromptStore.value);
+      pendingPromptStore.value = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (currentSessionId === null && pendingPromptStore.value) {
+      setInput(pendingPromptStore.value);
+      pendingPromptStore.value = null;
+    }
+  }, [currentSessionId]);
 
   function handleNewSession(nextInput = '') {
     onSessionChange(crypto.randomUUID());

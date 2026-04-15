@@ -8,6 +8,7 @@ import visitRouter from './routes/visit.routes';
 import medicationRouter from './routes/medication.routes';
 import metricRouter from './routes/metric.routes';
 import chatRouter from './routes/chat.routes';
+import aiSettingsRouter from './routes/ai-settings.routes';
 import { requireAuth } from './middleware/auth';
 import { errorHandler } from './middleware/error-handler';
 import { env } from './config/env';
@@ -24,6 +25,7 @@ app.use('/api/visits', requireAuth, visitRouter);
 app.use('/api/medications', requireAuth, medicationRouter);
 app.use('/api/metrics', requireAuth, metricRouter);
 app.use('/api/chat', requireAuth, chatRouter);
+app.use('/api/ai-settings', requireAuth, aiSettingsRouter);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });

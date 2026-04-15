@@ -5,3 +5,4 @@ export * from './visit';
 export * from './medication';
 export * from './metric';
 export * from './chat';
+export * from './ai-settings';

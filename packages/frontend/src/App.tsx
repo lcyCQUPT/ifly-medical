@@ -2,9 +2,11 @@ import { lazy, Suspense, type ReactElement } from 'react';
 import { Layout, Menu, Button, Spin, Typography } from 'antd';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import {
+  DashboardOutlined,
   FileTextOutlined,
   MedicineBoxOutlined,
   HeartOutlined,
+  SettingOutlined,
   UserOutlined,
   LogoutOutlined,
 } from '@ant-design/icons';
@@ -16,6 +18,12 @@ const { Sider, Content } = Layout;
 const VisitsPage = lazy(() =>
   import('./pages/VisitsPage').then((module) => ({ default: module.VisitsPage }))
 );
+const DashboardPage = lazy(() =>
+  import('./pages/DashboardPage').then((module) => ({ default: module.DashboardPage }))
+);
+const AISettingsPage = lazy(() =>
+  import('./pages/AISettingsPage').then((module) => ({ default: module.AISettingsPage }))
+);
 const MedicationsPage = lazy(() =>
   import('./pages/MedicationsPage').then((module) => ({ default: module.MedicationsPage }))
 );
@@ -26,9 +34,11 @@ const ProfilePage = lazy(() =>
   import('./pages/ProfilePage').then((module) => ({ default: module.ProfilePage }))
 );
 
-type PageKey = 'profile' | 'visits' | 'medications' | 'metrics';
+type PageKey = 'dashboard' | 'ai-settings' | 'profile' | 'visits' | 'medications' | 'metrics';
 
 const menuItems: Array<{ key: PageKey; label: string; icon: ReactElement }> = [
+  { key: 'dashboard', label: '健康概览', icon: <DashboardOutlined /> },
+  { key: 'ai-settings', label: 'AI 设置', icon: <SettingOutlined /> },
   { key: 'profile', label: '个人档案', icon: <UserOutlined /> },
   { key: 'visits', label: '就诊记录', icon: <FileTextOutlined /> },
   { key: 'medications', label: '用药记录', icon: <MedicineBoxOutlined /> },
@@ -36,6 +46,8 @@ const menuItems: Array<{ key: PageKey; label: string; icon: ReactElement }> = [
 ];
 
 function getSelectedMenuKey(pathname: string): PageKey {
+  if (pathname.startsWith('/dashboard')) return 'dashboard';
+  if (pathname.startsWith('/ai-settings')) return 'ai-settings';
   if (pathname.startsWith('/visits')) return 'visits';
   if (pathname.startsWith('/medications')) return 'medications';
   if (pathname.startsWith('/metrics')) return 'metrics';
@@ -95,12 +107,14 @@ function MainLayout() {
             }
           >
             <Routes>
-              <Route path="/" element={<Navigate to="/profile" replace />} />
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<PrivateRoute element={<DashboardPage />} />} />
+              <Route path="/ai-settings" element={<PrivateRoute element={<AISettingsPage />} />} />
               <Route path="/profile" element={<PrivateRoute element={<ProfilePage />} />} />
               <Route path="/visits" element={<PrivateRoute element={<VisitsPage />} />} />
               <Route path="/medications" element={<PrivateRoute element={<MedicationsPage />} />} />
               <Route path="/metrics" element={<PrivateRoute element={<MetricsPage />} />} />
-              <Route path="*" element={<Navigate to='/profile' replace />} />
+              <Route path="*" element={<Navigate to='/dashboard' replace />} />
             </Routes>
           </Suspense>
         </Content>
@@ -123,7 +137,7 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/login" element={user ? <Navigate to="/profile" replace /> : <AuthPage />} />
+      <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <AuthPage />} />
       <Route path="/*" element={<MainLayout />} />
     </Routes>
   );

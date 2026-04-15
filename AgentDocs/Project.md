@@ -23,11 +23,13 @@
 
 ## 2. 业务功能
 
-1. **个人基础档案**：姓名、性别、出生日期、血型、身高、体重、过敏史、慢性病史。**档案数据 ≠ 登录账号**。
-2. **就诊记录**：就诊日期、医院、科室、医生、症状、诊断、医嘱/建议、附件上传。
-3. **用药记录**：药品名、剂量、服用频率、起止时间、备注。
-4. **健康指标**：手动录入（如血糖、血压、心率），支持趋势查看。
-5. **AI 健康问答**：用户描述症状，模型解释并给出建议（非医疗诊断）。
+1. **健康概览仪表板**：聚合展示当前用药、最近就诊、各健康指标最新状态、AI 问答快捷入口。默认落地页。
+2. **个人基础档案**：姓名、性别、出生日期、血型、身高、体重、过敏史、慢性病史。**档案数据 ≠ 登录账号**。
+3. **就诊记录**：就诊日期、医院、科室、医生、症状、诊断、医嘱/建议、附件上传。
+4. **用药记录**：药品名、剂量、服用频率、起止时间、备注。
+5. **健康指标**：手动录入（如血糖、血压、心率），支持趋势查看。
+6. **AI 健康问答**：用户描述症状，模型解释并给出建议（非医疗诊断）。支持用户画像注入，实现个性化问答。
+7. **AI 设置**：用户可选择哪些档案字段可被 AI 使用，精细化控制隐私。
 
 ## 3. 目录结构
 
@@ -42,6 +44,7 @@ ifly-medical/
     │   └── src/
     │       ├── api/               # React Query hooks（按功能模块分文件）
     │       ├── components/        # 共享 UI 组件
+    │       ├── constants/         # 共享常量
     │       └── pages/             # 页面
     └── backend/                   # 后端
         ├── prisma/                # schema.prisma、migrations
@@ -153,6 +156,18 @@ pnpm --filter backend <script>    # 如 dev / start
 | GET | `/chat/history/:sessionId` | 某会话全部消息 |
 | DELETE | `/chat/history/:sessionId` | 删除某会话 |
 
+#### 5.2.6 AI 设置 · `AISettings`
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| GET | `/ai-settings` | 获取当前用户的 AI 设置 |
+| PUT | `/ai-settings` | 更新 AI 设置 |
+
+**补充说明**
+
+- `GET /ai-settings`：新用户返回默认配置（全部开启，姓名关闭）
+- `PUT /ai-settings`：部分更新，仅传需要修改的字段
+
 ## 6. 数据模型（Prisma 语义）
 
 下表为字段含义说明；**类型与约束以 `schema.prisma` 为准**。
@@ -234,6 +249,22 @@ pnpm --filter backend <script>    # 如 dev / start
 | role | String | `user` / `assistant` |
 | content | String | 正文 |
 | createdAt | DateTime | 时间 |
+
+### 6.6 `AISettings` · AI 设置
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | Int, PK | 自增 |
+| userId | Int, FK, Unique | 关联用户 |
+| includeGender | Boolean | 是否允许 AI 获取性别 |
+| includeAge | Boolean | 是否允许 AI 获取年龄 |
+| includeBloodType | Boolean | 是否允许 AI 获取血型 |
+| includeHeight | Boolean | 是否允许 AI 获取身高 |
+| includeWeight | Boolean | 是否允许 AI 获取体重 |
+| includeAllergies | Boolean | 是否允许 AI 获取过敏史 |
+| includeChronic | Boolean | 是否允许 AI 获取慢性病史 |
+| includeName | Boolean | 是否允许 AI 获取姓名（默认关闭） |
+| updatedAt | DateTime | 最后更新 |
 
 ## 7. 附件上传与文件存储
 

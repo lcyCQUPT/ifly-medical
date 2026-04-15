@@ -1,5 +1,6 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Button, Spin } from 'antd';
+import { pendingPromptStore } from '../constants/chat';
 
 const ChatPanel = lazy(() =>
   import('./ChatPanel').then((module) => ({ default: module.ChatPanel }))
@@ -8,6 +9,19 @@ const ChatPanel = lazy(() =>
 export function ChatWidget() {
   const [open, setOpen] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleOpenChat = (event: Event) => {
+      const prompt = (event as CustomEvent<string>).detail;
+      if (prompt) {
+        pendingPromptStore.value = prompt;
+      }
+      setOpen(true);
+      setCurrentSessionId(null);
+    };
+    window.addEventListener('open-chat', handleOpenChat);
+    return () => window.removeEventListener('open-chat', handleOpenChat);
+  }, []);
 
   return (
     <>
